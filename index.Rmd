@@ -146,12 +146,12 @@ logical_style <- function(value) {
 ```{r}
 github_actions <- map2(repos$owner, repos$name, 
                        ~ gh("GET /repos/:owner/:repo/actions/workflows", 
-                            owner = .x, repo = .y))
+                            owner = .x, repo = .y, .token = "${{secrets.GITHUB_PAT}}"))
 
 
 readme_bagde_status <- map2(repos$owner, repos$name,
                        ~ gh("GET /repos/:owner/:repo/readme", 
-                            owner = .x, repo = .y)) %>%
+                            owner = .x, repo = .y, , .token = "${{secrets.GITHUB_PAT}}")) %>%
   map_dfr(check_readme_bagdes)
 
 table_data <- repos %>%
