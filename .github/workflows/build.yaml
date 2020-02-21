@@ -18,7 +18,7 @@ jobs:
       - name: Create folder
         run: Rscript -e 'dir.create("public")'
       - name: Render site
-        run: Rscript -e 'rmarkdown::render("index.Rmd", quiet = TRUE, output_file = "public/index.html")'
+        run: Rscript -e 'rmarkdown::render("index.Rmd", quiet = TRUE, output_file = "public/index.html", params = list(github_token = "${{ secrets.GITHUB_PAT }}"))'
       - uses: actions/upload-artifact@v1
         with:
           name: public
