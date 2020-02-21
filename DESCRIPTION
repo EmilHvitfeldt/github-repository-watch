@@ -9,3 +9,5 @@ Imports:
     ymlthis,
     glue,
     gh
+URL: https://github.com/EmilHvitfeldt/github-repository-watch
+BugReports: https://github.com/EmilHvitfeldt/github-repository-watch/issues
