@@ -1,0 +1,11 @@
+Package: github-repository-watch
+Type: NA
+Title: Dashboard to view packages
+Version: 0.0.1
+Imports: 
+    flexdashboard,
+    reactable,
+    tidyverse,
+    ymlthis,
+    glue,
+    gh
