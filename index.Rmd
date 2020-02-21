@@ -153,7 +153,7 @@ github_actions <- map2(repos$owner, repos$name,
 
 readme_bagde_status <- map2(repos$owner, repos$name,
                        ~ gh("GET /repos/:owner/:repo/readme", 
-                            owner = .x, repo = .y, , .token = params$github_token)) %>%
+                            owner = .x, repo = .y, .token = params$github_token)) %>%
   map_dfr(check_readme_bagdes)
 
 table_data <- repos %>%
