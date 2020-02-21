@@ -15,6 +15,8 @@ jobs:
       - uses: r-lib/actions/setup-pandoc@v1
       - name: Install packages
         run: Rscript -e 'install.packages(c("blogdown", "rmarkdown", "flexdashboard", "reactable", "tidyverse", "ymlthis", "glue", "gh"))'
+      - name: Install Hugo
+        run: Rscript -e 'blogdown::install_hugo()'
       - name: Create folder
         run: Rscript -e 'dir.create("public")'
       - name: Render site
