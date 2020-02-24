@@ -8,17 +8,51 @@ params:
    github_token: !r gh::gh_token()
 ---
 
+```{css}
+.tag {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.status-passing {
+  background: hsl(116, 60%, 90%);
+  color: hsl(116, 30%, 25%);
+}
+
+.status-missing {
+  background: hsl(230, 70%, 90%);
+  color: hsl(230, 45%, 30%);
+}
+
+.status-failing {
+  background: hsl(350, 70%, 90%);
+  color: hsl(350, 45%, 30%);
+}
+
+
+.status-yes {
+  background: hsl(116, 60%, 90%);
+  color: hsl(116, 30%, 25%);
+}
+
+.status-no {
+  background: hsl(350, 70%, 90%);
+  color: hsl(350, 45%, 30%);
+}
+```
+
 ```{r setup, include=FALSE}
 library(flexdashboard)
 library(reactable)
 library(tidyverse)
 library(ymlthis)
+library(httr)
 library(glue)
 library(gh)
 ```
-
-Repositories
-=======================================================================
 
 ```{r}
 me <- "EmilHvitfeldt"
@@ -26,31 +60,31 @@ tm <- "Tidymodels"
 
 repos <- tribble(
   ~owner, ~name,             ~org,
+  tm, "themis",              TRUE,
+  tm, "textrecipes",         TRUE,
+  me, "prismatic",           FALSE,
+  me, "hcandersenr",         FALSE,
+  me, "paletteer",           FALSE,
+  me, "textdata",            FALSE,
+  me, "ggpage",              FALSE,
+  me, "ElizabethWarrenMeme", FALSE,
   me, "tilemapr",            FALSE,
   me, "ggtetris",            FALSE,
   me, "cookiemonster",       FALSE,
-  me, "offensiveR",          FALSE,
   me, "tripleblind",         FALSE,
   me, "horus",               FALSE,
   me, "walmartAPI",          FALSE,
+  me, "offensiveR",          FALSE,
   me, "recap",               FALSE,
-  me, "hcandersenr",         FALSE,
   me, "ehlib",               FALSE,
   me, "ggshapes",            FALSE,
   me, "quickpalette",        FALSE,
   me, "miscpalettes",        FALSE,
   me, "ggclipped",           FALSE,
   me, "ggshuffle",           FALSE,
-  me, "paletteer",           FALSE,
   me, "gganonymize",         FALSE,
   me, "unitscales",          FALSE,
-  me, "textdata",            FALSE,
-  me, "ggpage",              FALSE,
-  me, "glyphextra",          FALSE,
-  me, "ElizabethWarrenMeme", FALSE,
-  me, "prismatic",           FALSE,
-  tm, "textrecipes",         TRUE,
-  tm, "themis",              TRUE
+  me, "glyphextra",          FALSE
 )
 ```
 
@@ -144,6 +178,58 @@ logical_style <- function(value) {
   }
 ```
 
+```{r dependencies}
+get_dependences <- function(package) {
+  url <- POST(glue("https://tinyverse.netlify.com/badge/{package}"))$url
+  str_extract(url, "[0-9]+/[0-9]+")
+}
+```
+
+```{r}
+get_codecov_value <- function(owner, name) {
+  read_lines(glue("https://codecov.io/gh/{owner}/{name}/branch/master/graph/badge.svg")) %>%
+  str_trim() %>%
+  str_subset("^<text") %>%
+  str_subset("[0-9]+%") %>%
+  str_extract("[0-9]+%") %>%
+  .[1] %>%
+  parse_number()
+}
+
+safe_get_codecov_value <- function(owner, name) {
+  rrr <- map2(owner, name, safely(get_codecov_value))
+
+  if_else(map_lgl(rrr, ~ is.null(.$error)), map_chr(rrr, "result"), "timeout")
+}
+```
+
+```{r}
+get_grand_total <- function(package) {
+  read_lines(glue("https://cranlogs.r-pkg.org/downloads/total/2012-10-01:{Sys.Date()}/{package}")) %>%
+    str_extract('downloads\":[0-9]*') %>%
+    parse_number()
+}
+```
+
+```{r}
+get_last_month <- function(package) {
+  read_lines(glue("http://cranlogs.r-pkg.org/downloads/total/last-month/{package}")) %>%
+    str_extract('downloads\":[0-9]*') %>%
+    parse_number()
+}
+```
+
+```{r}
+metrix_table <- repos %>%
+  mutate(dependences = map_chr(name, get_dependences),
+        # codecov = map2_chr(owner, name, safe_get_codecov_value),
+         grand_total = map_dbl(name, get_grand_total),
+         last_month = map_dbl(name, get_last_month))
+```
+
+
+Repositories
+=======================================================================
 
 ```{r}
 github_actions <- map2(repos$owner, repos$name, 
@@ -161,10 +247,13 @@ table_data <- repos %>%
          `R CMD check` = map_chr(`R CMD check`, r_cmd_check_svg_to_text),
          `Versions` = map_chr(github_actions, r_cmd_check_versions)) %>%
   bind_cols(readme_bagde_status)
+```
 
+
+```{r}
 table_data %>%
   select(-org, -owner) %>% 
-  reactable::reactable(
+  reactable(
     columns = list(
     `R CMD check` = colDef(cell = function(value) {
       class <- paste0("tag status-", value)
@@ -186,46 +275,25 @@ table_data %>%
 
 ```
 
-```{css}
-.tag {
-  display: inline-block;
-  padding: 2px 12px;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 12px;
-}
-
-.status-passing {
-  background: hsl(116, 60%, 90%);
-  color: hsl(116, 30%, 25%);
-}
-
-.status-missing {
-  background: hsl(230, 70%, 90%);
-  color: hsl(230, 45%, 30%);
-}
-
-.status-failing {
-  background: hsl(350, 70%, 90%);
-  color: hsl(350, 45%, 30%);
-}
-
-
-.status-yes {
-  background: hsl(116, 60%, 90%);
-  color: hsl(116, 30%, 25%);
-}
-
-.status-no {
-  background: hsl(350, 70%, 90%);
-  color: hsl(350, 45%, 30%);
-}
-```
-
 Metrics
 =======================================================================
 
 ```{r}
-monthly_downloads <- cranlogs::cran_downloads(repos$name, "last-month")
-alltime_downloads <- cranlogs::cran_downloads(repos$name, from = "2012-10-10")
+metrix_table %>%
+  separate(dependences, sep = "/", into = c("Direct", "Recursive"), convert = TRUE) %>%
+  select(-org) %>%
+  reactable(
+    columns = list(
+      owner = colDef(name = "Owner"),
+      name = colDef(name = "Name"),
+      grand_total = colDef(name = "Grand Total"),
+      last_month = colDef(name = "Last Month")
+    ),
+    columnGroups = list(
+      colGroup(name = "Dependencies", columns = c("Direct", "Recursive")),
+      colGroup(name = "Downloads", columns = c("grand_total", "last_month"))
+    )
+  )
 ```
+
+
